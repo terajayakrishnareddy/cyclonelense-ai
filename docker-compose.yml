@@ -1,0 +1,61 @@
+# Production-style stack: PostgreSQL + API + nginx-served frontend.
+# All secrets come from .env (create it with: python scripts/generate_env.py). Nothing here is a usable default.
+name: cyclonelens
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cyclonelens}
+      POSTGRES_USER: ${POSTGRES_USER:-cyclonelens}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (python scripts/generate_env.py)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]          # not published to the host
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cyclonelens}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-cyclonelens}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (python scripts/generate_env.py)}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env to the public https:// origin of the site}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-60}
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}
+      MAX_IMPORT_MB: ${MAX_IMPORT_MB:-500}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      FORWARDED_ALLOW_IPS: "*"    # safe only because the API is reachable solely from the web container
+    volumes:
+      - uploads:/data/uploads
+    networks: [internal]          # not published to the host; reached through nginx
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""          # same-origin /api (proxied by nginx)
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }
+    environment:
+      API_UPSTREAM: http://api:8000
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:8080"   # loopback by default: put a TLS reverse proxy in front
+    networks: [internal]
+
+networks:
+  internal:
+
+volumes:
+  pgdata:
+  uploads:

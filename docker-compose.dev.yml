@@ -1,0 +1,15 @@
+# Optional local PostgreSQL for development (the default dev database is SQLite and needs no Docker).
+#   docker compose -f docker-compose.dev.yml up -d
+# then set in backend/.env:  DATABASE_URL=postgresql+psycopg://cyclonelens:<POSTGRES_PASSWORD>@127.0.0.1:5432/cyclonelens
+name: cyclonelens-dev
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cyclonelens
+      POSTGRES_USER: cyclonelens
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?export POSTGRES_PASSWORD or put it in .env}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: [pgdata-dev:/var/lib/postgresql/data]
+volumes:
+  pgdata-dev:

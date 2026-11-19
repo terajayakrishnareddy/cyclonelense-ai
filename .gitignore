@@ -1,0 +1,26 @@
+# secrets / environments
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# node / build output
+node_modules/
+frontend/dist/
+# databases and user data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+uploads/
+backups/
+data/raw/*
+!data/raw/.gitkeep
+# ML artifacts (large, produced by training)
+ml/artifacts/
