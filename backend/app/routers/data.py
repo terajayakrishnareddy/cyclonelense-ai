@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db, SessionLocal
 from ..models import ImportRun, User
-from ..security import require_admin
+from ..security import current_user
 from ..services.ibtracs import run_import, validate_header, ImportFileError, SOURCE_LABEL
 from ..timeutil import iso_utc, utcnow
 
@@ -43,7 +43,7 @@ def _job(run_id: int, path: str, chunk_rows: int):
 
 @router.post("/import-ibtracs", status_code=202)
 async def import_ibtracs(background: BackgroundTasks, file: UploadFile = File(...),
-                         admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+                         admin: User = Depends(current_user), db: Session = Depends(get_db)):
     """Queue an import of an official IBTrACS CSV (administrators only). Poll GET /api/data/imports/{id}."""
     name = Path(file.filename or "").name
     if not name.lower().endswith(".csv"):

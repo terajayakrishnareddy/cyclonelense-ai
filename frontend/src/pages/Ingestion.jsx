@@ -79,8 +79,8 @@ export default function Ingestion({ pollMs = 1500 }) {
   return (
     <>
       <div className="two">
-        <Panel title="NOAA IBTrACS CSV import" sub="Administrators only. Imports best-track observations from the official NCEI CSV">
-          <RequireAuth admin what="import data">
+        <Panel title="NOAA IBTrACS CSV import" sub="Signed-in users. Imports best-track observations from the official NCEI CSV">
+          <RequireAuth what="import data">
             <Uploader onDone={history.reload} pollMs={pollMs} />
           </RequireAuth>
         </Panel>
